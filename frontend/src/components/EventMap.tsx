@@ -42,7 +42,7 @@ const tiles = (
 /** Read-only map with a single pin. */
 export function EventMap({ latitude, longitude, height = 260 }: { latitude: number; longitude: number; height?: number }) {
   return (
-    <Box sx={{ height, borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider', isolation: 'isolate' }}>
+    <Box sx={{ height, borderRadius: '16px', overflow: 'hidden', border: 1, borderColor: 'divider', isolation: 'isolate' }}>
       <MapContainer center={[latitude, longitude]} zoom={15} scrollWheelZoom={false} style={{ height: '100%' }}>
         {tiles}
         <AutoResize />
@@ -81,7 +81,7 @@ export function LocationPicker({
     latitude !== null && longitude !== null ? [latitude, longitude] : null;
 
   return (
-    <Box sx={{ height, borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider', cursor: 'crosshair', isolation: 'isolate' }}>
+    <Box sx={{ height, borderRadius: '16px', overflow: 'hidden', border: 1, borderColor: 'divider', cursor: 'crosshair', isolation: 'isolate' }}>
       <MapContainer center={position ?? TIMISOARA} zoom={13} style={{ height: '100%' }}>
         {tiles}
         <AutoResize />

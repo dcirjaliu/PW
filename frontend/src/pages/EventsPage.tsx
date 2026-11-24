@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
-  Chip,
   Collapse,
-  Divider,
   FormControlLabel,
   IconButton,
   InputAdornment,
@@ -24,7 +22,6 @@ import TuneIcon from '@mui/icons-material/Tune';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ClearIcon from '@mui/icons-material/Clear';
 import AddIcon from '@mui/icons-material/Add';
-import TodayIcon from '@mui/icons-material/Today';
 import { eventsApi } from '../api/endpoints';
 import type { EventQuery } from '../api/types';
 import { CATEGORY_OPTIONS } from '../lib/categories';
@@ -32,9 +29,16 @@ import { dateInputToIso } from '../lib/format';
 import { activeQuickRange, quickRange, QUICK_RANGES, type QuickRange } from '../lib/dateRanges';
 import { applyClientFilters, isSortKey, SORT_KEYS, type SortKey } from '../lib/eventFilters';
 import { EmptyState, EventGrid } from '../components/EventGrid';
+import { fourUpGridSize } from '../lib/grid';
 import { TIMISOARA } from '../lib/geo';
 import { useAuth } from '../auth/useAuth';
 import { useI18n } from '../i18n/i18n';
+import { Hero } from '../components/Hero';
+import { Reveal } from '../components/Reveal';
+import { GuestGate } from '../components/GuestGate';
+import { GUEST_EVENT_LIMIT } from '../lib/config';
+import { scrollToElement } from '../lib/smoothScroll';
+import { display, tokens } from '../theme/theme';
 import type { MessageKey } from '../i18n/messages';
 
 const PAGE_SIZE = 12;
@@ -50,6 +54,15 @@ export function EventsPage() {
   const { isAuthenticated } = useAuth();
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
+
+  // Links like "Discover" arrive with state { scrollTo: 'events' }: jump to the list.
+  // Runs after the route-change scroll-to-top (parent effects run after this one), hence the short delay.
+  useEffect(() => {
+    if ((location.state as { scrollTo?: string } | null)?.scrollTo !== 'events') return;
+    const timer = window.setTimeout(() => scrollToElement(document.getElementById('events')), 150);
+    return () => window.clearTimeout(timer);
+  }, [location.key, location.state]);
 
   const search = params.get('q') ?? '';
   const category = params.get('category');
@@ -62,7 +75,8 @@ export function EventsPage() {
   const freeOnly = params.get('free') === '1';
   const sortParam = params.get('sort');
   const sort: SortKey = isSortKey(sortParam) ? sortParam : 'date';
-  const page = Math.max(1, Number(params.get('page') ?? 1));
+  // Signed-out visitors only ever see the first few events (see GuestGate).
+  const page = isAuthenticated ? Math.max(1, Number(params.get('page') ?? 1)) : 1;
 
   // Free-only and non-date sorting aren't supported by the API, so fetch a larger batch and do it here.
   const clientMode = freeOnly || sort !== 'date';
@@ -160,99 +174,135 @@ export function EventsPage() {
     );
   };
 
+  const scrollToEvents = () => scrollToElement(document.getElementById('events'));
+
+  const textTab = (active: boolean) => ({
+    ...display,
+    fontSize: 12,
+    letterSpacing: '0.08em',
+    cursor: 'pointer',
+    background: 'none',
+    border: 0,
+    p: 0,
+    whiteSpace: 'nowrap',
+    color: active ? 'text.primary' : 'text.secondary',
+    opacity: active ? 1 : 0.7,
+    transition: 'color .15s, opacity .15s',
+    '&:hover': { color: 'text.primary', opacity: 1 },
+    ...(active ? { textDecoration: 'underline', textDecorationColor: tokens.pink, textUnderlineOffset: 6, textDecorationThickness: 2 } : {}),
+  });
+
   return (
-    <Stack spacing={3}>
-      <Paper
+    <Stack spacing={{ xs: 4, md: 6 }}>
+      <Reveal y={16}>
+        <Hero onExplore={scrollToEvents} />
+      </Reveal>
+
+      <Reveal delay={150}>
+      <TextField
+        fullWidth
+        placeholder={t('home.searchPlaceholder')}
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
         sx={{
-          p: { xs: 3, md: 5 },
-          borderRadius: 4,
-          color: 'common.white',
-          background: 'linear-gradient(120deg, #3d5afe 0%, #7c4dff 50%, #f50057 100%)',
+          maxWidth: 760,
+          mx: 'auto',
+          '& .MuiOutlinedInput-root': { borderRadius: 999, pl: 1, bgcolor: tokens.surface, height: 56 },
         }}
-        elevation={0}
-      >
-        <Typography variant="h3" sx={{ fontSize: { xs: 30, md: 44 } }} gutterBottom>
-          {t('home.heroTitle')}
-        </Typography>
-        <Typography sx={{ opacity: 0.9, mb: 3, maxWidth: 560 }}>{t('home.heroText')}</Typography>
-        <TextField
-          fullWidth
-          placeholder={t('home.searchPlaceholder')}
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          sx={{ maxWidth: 640, '& .MuiOutlinedInput-root': { bgcolor: 'background.paper', borderRadius: 3 } }}
-          slotProps={{
-            htmlInput: { 'aria-label': t('home.searchPlaceholder') },
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: searchInput ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchInput('')} aria-label={t('home.clearSearch')}>
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                </InputAdornment>
-              ) : undefined,
-            },
+        slotProps={{
+          htmlInput: { 'aria-label': t('home.searchPlaceholder') },
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchInput ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setSearchInput('')} aria-label={t('home.clearSearch')}>
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
+          },
+        }}
+      />
+      </Reveal>
+
+      {/* Category strip, styled like a row of partner logos. */}
+      <Reveal delay={250}>
+      <Box sx={{ borderTop: 1, borderBottom: 1, borderColor: 'divider', py: 2.5 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: { xs: 3, md: 4.5 },
+            overflowX: 'auto',
+            justifyContent: { lg: 'space-between' },
+            ...noScrollbar,
           }}
-        />
-      </Paper>
-
-      <Stack spacing={1.5}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', flexGrow: 1, ...noScrollbar }}>
-            <Chip
-              label={t('home.all')}
-              color={category === null ? 'primary' : 'default'}
-              variant={category === null ? 'filled' : 'outlined'}
-              onClick={() => update({ category: null })}
-            />
-            {CATEGORY_OPTIONS.map((c) => {
-              const active = category === String(c.value);
-              return (
-                <Chip
-                  key={c.value}
-                  icon={c.icon}
-                  label={t(c.labelKey)}
-                  color={active ? 'primary' : 'default'}
-                  variant={active ? 'filled' : 'outlined'}
-                  onClick={() => update({ category: active ? null : String(c.value) })}
-                />
-              );
-            })}
-          </Box>
-          <Button
-            startIcon={<TuneIcon />}
-            variant={showFilters ? 'contained' : 'outlined'}
-            onClick={() => setShowFilters((s) => !s)}
-            sx={{ flexShrink: 0 }}
-          >
-            {t('home.filters')}
-          </Button>
-        </Stack>
-
-        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', ...noScrollbar }}>
-          {QUICK_RANGES.map((k) => (
-            <Chip
-              key={k}
-              icon={<TodayIcon />}
-              label={t(quickLabel[k])}
-              color={quick === k ? 'secondary' : 'default'}
-              variant={quick === k ? 'filled' : 'outlined'}
-              onClick={() => setQuick(k)}
-            />
-          ))}
-          <Divider orientation="vertical" flexItem />
-          <Chip
-            label={t('home.freeOnly')}
-            color={freeOnly ? 'success' : 'default'}
-            variant={freeOnly ? 'filled' : 'outlined'}
-            onClick={() => update({ free: freeOnly ? null : '1' })}
-          />
+        >
+          {[{ value: null as number | null, labelKey: 'home.all' as MessageKey, icon: null }, ...CATEGORY_OPTIONS].map((c) => {
+            const active = c.value === null ? category === null : category === String(c.value);
+            return (
+              <Box
+                key={c.labelKey}
+                component="button"
+                type="button"
+                onClick={() => update({ category: active || c.value === null ? null : String(c.value) })}
+                sx={{
+                  ...textTab(active),
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: 13,
+                  ...(active ? { background: tokens.accentGradient, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', opacity: 1 } : {}),
+                  '& svg': { fontSize: 20, color: active ? tokens.pink : 'inherit' },
+                }}
+              >
+                {c.icon}
+                {t(c.labelKey)}
+              </Box>
+            );
+          })}
         </Box>
+      </Box>
+      </Reveal>
+
+      <Stack spacing={2.5} id="events" sx={{ scrollMarginTop: 96 }}>
+        <Reveal>
+        <Stack
+          direction={{ xs: 'column', lg: 'row' }}
+          sx={{ justifyContent: 'space-between', alignItems: { lg: 'flex-end' }, gap: 2.5 }}
+        >
+          <Typography variant="h2" sx={{ fontSize: { xs: 24, md: 34 } }}>
+            {t('home.sectionLine1')}
+            <br />
+            {t('home.sectionLine2')}
+          </Typography>
+          <Stack spacing={1.5} sx={{ alignItems: { lg: 'flex-end' }, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', gap: 3, overflowX: 'auto', ...noScrollbar }}>
+              {QUICK_RANGES.map((k) => (
+                <Box key={k} component="button" type="button" onClick={() => setQuick(k)} sx={textTab(quick === k)}>
+                  {t(quickLabel[k])}
+                </Box>
+              ))}
+              <Box component="button" type="button" onClick={() => update({ free: freeOnly ? null : '1' })} sx={textTab(freeOnly)}>
+                {t('home.freeOnly')}
+              </Box>
+            </Box>
+            <Button
+              size="small"
+              startIcon={<TuneIcon />}
+              variant={showFilters ? 'contained' : 'outlined'}
+              onClick={() => setShowFilters((s) => !s)}
+              sx={{ alignSelf: { xs: 'flex-start', lg: 'flex-end' } }}
+            >
+              {t('home.filters')}
+            </Button>
+          </Stack>
+        </Stack>
+        </Reveal>
 
         <Collapse in={showFilters}>
           <Paper variant="outlined" sx={{ p: 2 }}>
@@ -338,25 +388,22 @@ export function EventsPage() {
             )}
           </Paper>
         </Collapse>
-      </Stack>
 
-      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
-        <Typography variant="h5">{hasFilters ? t('home.results') : t('home.upcoming')}</Typography>
         {view && (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+          <Typography variant="body2" color="text.secondary">
             {view.total === 1 ? t('home.count.one') : t('home.count.other', { count: view.total })}
             {isFetching && !isLoading ? ` · ${t('home.updating')}` : ''}
           </Typography>
         )}
-      </Stack>
       {truncated && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+        <Typography variant="caption" color="text.secondary">
           {t('home.limitedNote', { count: CLIENT_FETCH_SIZE })}
         </Typography>
       )}
 
       <EventGrid
-        events={view?.items}
+        events={isAuthenticated ? view?.items : view?.items.slice(0, GUEST_EVENT_LIMIT)}
+        gridSize={isAuthenticated ? undefined : fourUpGridSize}
         isLoading={isLoading}
         error={error}
         onRetry={() => refetch()}
@@ -375,7 +422,11 @@ export function EventsPage() {
         }
       />
 
-      {view && view.pages > 1 && (
+      {!isAuthenticated && view && view.total > GUEST_EVENT_LIMIT && (
+        <GuestGate total={view.total} teaser={view.items.slice(GUEST_EVENT_LIMIT, GUEST_EVENT_LIMIT + 4)} />
+      )}
+
+      {isAuthenticated && view && view.pages > 1 && (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <Pagination
             count={view.pages}
@@ -383,11 +434,12 @@ export function EventsPage() {
             color="primary"
             onChange={(_, p) => {
               update({ page: p === 1 ? null : String(p) }, false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              scrollToElement(document.getElementById('events'));
             }}
           />
         </Box>
       )}
+      </Stack>
     </Stack>
   );
 }

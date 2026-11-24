@@ -31,9 +31,13 @@ Pages: discover (search as you type, categories, Today / This weekend / This wee
 date range, radius filter, sort by date / price / popularity, free only, pagination),
 event details (RSVP, favorites, map, directions, add to Google Calendar / .ics,
 tickets link), create/edit/delete events, My events / Attending / Favorites with
-upcoming/past split, profile, sign in / sign up, help & contact, light/dark mode.
+upcoming/past split, profile, sign in / sign up, help & contact.
 
-The UI is in Romanian by default, with English one click away (top bar). Strings
+Design: dark theme with a pink→peach accent, Michroma (headings) + Poppins (body),
+tokens in `src/theme/theme.ts`. Events without an image use a category stock photo
+from Unsplash (`src/lib/images.ts`); the map uses OpenStreetMap tiles inverted for night mode.
+
+The UI is in English by default, with Romanian one click away (top bar). Strings
 live in `src/i18n/messages.ts`; a test checks both languages have the same keys.
 
 Notes on data handled in the browser (the API has no equivalent filters):

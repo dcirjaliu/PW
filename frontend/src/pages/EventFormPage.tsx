@@ -125,7 +125,7 @@ function EventForm({ event }: { event?: EventDetail }) {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" sx={{ mb: 2.5 }}>
               {t('form.basics')}
             </Typography>
             <Grid container spacing={2}>
@@ -180,7 +180,7 @@ function EventForm({ event }: { event?: EventDetail }) {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" sx={{ mb: 2.5 }}>
               {t('form.when')}
             </Typography>
             <Grid container spacing={2}>
@@ -216,7 +216,7 @@ function EventForm({ event }: { event?: EventDetail }) {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" sx={{ mb: 2.5 }}>
               {t('form.where')}
             </Typography>
             <Grid container spacing={2}>
@@ -274,7 +274,7 @@ function EventForm({ event }: { event?: EventDetail }) {
 
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" sx={{ mb: 2.5 }}>
               {t('form.extras')}
             </Typography>
             <Grid container spacing={2}>

@@ -11,8 +11,8 @@ function initialLanguage(): Language {
   } catch {
     // storage unavailable
   }
-  // Romanian by default (local app for Timișoara); English is one click away in the top bar.
-  return 'ro';
+  // English by default; Romanian is one click away in the top bar.
+  return 'en';
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {

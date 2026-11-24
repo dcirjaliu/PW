@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link as RouterLink, Navigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Box, Button, Stack, Tab, Tabs, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Button, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ExploreIcon from '@mui/icons-material/Explore';
 import { eventsApi } from '../api/endpoints';
@@ -23,7 +23,7 @@ interface TabConfig {
 
 const tabs: Record<string, TabConfig> = {
   events: {
-    labelKey: 'me.tab.events',
+    labelKey: 'nav.myEvents',
     fetch: eventsApi.mine,
     emptyTitle: 'me.empty.events',
     emptyText: 'me.empty.eventsText',
@@ -31,7 +31,7 @@ const tabs: Record<string, TabConfig> = {
     hasPast: true,
   },
   attending: {
-    labelKey: 'me.tab.attending',
+    labelKey: 'nav.attending',
     fetch: eventsApi.attending,
     emptyTitle: 'me.empty.attending',
     emptyText: 'me.empty.attendingText',
@@ -39,7 +39,7 @@ const tabs: Record<string, TabConfig> = {
     hasPast: false,
   },
   favorites: {
-    labelKey: 'me.tab.favorites',
+    labelKey: 'nav.favorites',
     fetch: eventsApi.favorites,
     emptyTitle: 'me.empty.favorites',
     emptyText: 'me.empty.favoritesText',
@@ -82,28 +82,27 @@ function MeTabs({ tab }: { tab: TabKey }) {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4" component="h1">
-          {t('me.title')}
-        </Typography>
-        <Button variant="outlined" startIcon={<AddIcon />} component={RouterLink} to="/events/new">
-          {t('me.newEvent')}
-        </Button>
+      {/* The navbar already switches between My events / Attending / Favorites, so no tabs here. */}
+      <Stack
+        direction="row"
+        sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, pb: 2, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'baseline' }}>
+          <Typography variant="h4" component="h1">
+            {t(config.labelKey)}
+          </Typography>
+          {data && (
+            <Typography sx={{ color: 'text.secondary', fontSize: 15 }}>
+              {data.length === 1 ? t('home.count.one') : t('home.count.other', { count: data.length })}
+            </Typography>
+          )}
+        </Stack>
+        {config.action === 'create' && (
+          <Button variant="outlined" startIcon={<AddIcon />} component={RouterLink} to="/events/new">
+            {t('me.newEvent')}
+          </Button>
+        )}
       </Stack>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tab} variant="scrollable" allowScrollButtonsMobile>
-          {(Object.keys(tabs) as TabKey[]).map((key) => (
-            <Tab
-              key={key}
-              value={key}
-              component={RouterLink}
-              to={`/me/${key}`}
-              label={key === tab && data ? `${t(tabs[key].labelKey)} (${data.length})` : t(tabs[key].labelKey)}
-            />
-          ))}
-        </Tabs>
-      </Box>
 
       {config.hasPast && (
         <ToggleButtonGroup

@@ -5,8 +5,9 @@ import type { EventSummary } from '../api/types';
 import { errorMessage } from '../api/client';
 import { useI18n } from '../i18n/i18n';
 import { EventCard } from './EventCard';
+import { Reveal } from './Reveal';
 
-const gridSize = { xs: 12, sm: 6, md: 4, lg: 3 };
+import { defaultGridSize } from '../lib/grid';
 
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
@@ -28,6 +29,7 @@ export function EventGrid({
   onRetry,
   empty,
   dimmed,
+  gridSize = defaultGridSize,
 }: {
   events: EventSummary[] | undefined;
   isLoading: boolean;
@@ -36,6 +38,8 @@ export function EventGrid({
   empty: ReactNode;
   /** Render cards slightly faded (e.g. past events). */
   dimmed?: boolean;
+  /** Column sizes per breakpoint. */
+  gridSize?: Record<string, number>;
 }) {
   const { t } = useI18n();
 
@@ -79,9 +83,12 @@ export function EventGrid({
 
   return (
     <Grid container spacing={2.5}>
-      {events.map((e) => (
+      {events.map((e, i) => (
         <Grid key={e.id} size={gridSize}>
-          <EventCard event={e} dimmed={dimmed} />
+          {/* Stagger cards across a row as they scroll into view. */}
+          <Reveal delay={(i % 4) * 80}>
+            <EventCard event={e} dimmed={dimmed} />
+          </Reveal>
         </Grid>
       ))}
     </Grid>

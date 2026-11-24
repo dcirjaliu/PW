@@ -42,11 +42,20 @@ import { useI18n } from '../i18n/i18n';
 import type { MessageKey } from '../i18n/messages';
 import { categoryMeta } from '../lib/categories';
 import { formatPrice, formatRange, initials } from '../lib/format';
-import { EventImage } from '../components/EventCard';
+import { DateBlock, EventImage } from '../components/EventCard';
+import { tokens } from '../theme/theme';
 import { EventMap } from '../components/EventMap';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AddToCalendar } from '../components/AddToCalendar';
+import { AuthButtons } from '../components/GuestGate';
 import { isFree } from '../lib/eventFilters';
+
+const roundGlass = {
+  bgcolor: 'rgba(27,28,41,0.6)',
+  backdropFilter: 'blur(8px)',
+  border: `1px solid ${tokens.border}`,
+  '&:hover': { bgcolor: 'rgba(27,28,41,0.85)' },
+};
 
 const rsvpStatusKey: Record<RsvpStatus, MessageKey> = {
   [RsvpStatus.Going]: 'event.rsvpStatus.going',
@@ -190,41 +199,70 @@ export function EventDetailPage() {
         </Button>
       </Box>
 
-      <Card sx={{ overflow: 'hidden' }}>
-        <EventImage imageUrl={event.imageUrl} category={event.category} height={320} alt={event.title} />
-      </Card>
+      {/* Poster header: photo with the title set over it. */}
+      <Box sx={{ position: 'relative', borderRadius: '28px', overflow: 'hidden', border: 1, borderColor: 'divider' }}>
+        <EventImage
+          imageUrl={event.imageUrl}
+          category={event.category}
+          height={{ xs: 300, md: 440 }}
+          alt={event.title}
+          width={1400}
+          eager
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(27,28,41,0.15) 0%, rgba(27,28,41,0.35) 45%, rgba(27,28,41,0.95) 100%)',
+          }}
+        />
+        <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 16, right: 16 }}>
+          {/* Favorites are for signed-in users only; visitors just read. */}
+          {isAuthenticated && (
+            <Tooltip title={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}>
+              <IconButton
+                onClick={() => favorite.mutate(!event.isFavorite)}
+                aria-label={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}
+                sx={roundGlass}
+              >
+                {event.isFavorite ? <FavoriteIcon sx={{ color: tokens.pink }} /> : <FavoriteBorderIcon />}
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title={t('event.share')}>
+            <IconButton onClick={share} aria-label={t('event.share')} sx={roundGlass}>
+              <ShareIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={{ xs: 2, md: 3 }}
+          sx={{ position: 'absolute', left: { xs: 20, md: 40 }, right: { xs: 20, md: 40 }, bottom: { xs: 20, md: 36 }, alignItems: 'flex-end' }}
+        >
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <DateBlock iso={event.startUtc} size="lg" />
+          </Box>
+          <Stack spacing={1} sx={{ minWidth: 0 }}>
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: tokens.pink }}>
+                {t(meta.labelKey)}
+                {event.externalSource ? ` · ${t('event.via', { source: event.externalSource })}` : ''}
+              </Typography>
+              {isPast && <Chip size="small" label={t('event.ended')} />}
+              {isOwner && <Chip size="small" label={t('event.youOrganize')} variant="outlined" />}
+            </Stack>
+            <Typography variant="h1" sx={{ fontSize: { xs: 24, sm: 32, md: 44 } }}>
+              {event.title}
+            </Typography>
+          </Stack>
+        </Stack>
+      </Box>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 8 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-              <Chip icon={meta.icon} label={t(meta.labelKey)} color="primary" variant="outlined" />
-              {event.externalSource && <Chip label={t('event.via', { source: event.externalSource })} variant="outlined" />}
-              {isPast && <Chip label={t('event.ended')} />}
-              {isOwner && <Chip label={t('event.youOrganize')} color="secondary" variant="outlined" />}
-            </Stack>
-
-            <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}>
-              <Typography variant="h4" component="h1" sx={{ flexGrow: 1, fontSize: { xs: 28, md: 36 } }}>
-                {event.title}
-              </Typography>
-              <Tooltip title={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}>
-                <IconButton
-                  color="secondary"
-                  onClick={() => (isAuthenticated ? favorite.mutate(!event.isFavorite) : requireLogin())}
-                  aria-label={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}
-                >
-                  {event.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={t('event.share')}>
-                <IconButton onClick={share} aria-label={t('event.share')}>
-                  <ShareIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>
+          <Stack spacing={3}>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8, fontSize: 16, color: 'text.secondary' }}>
               {event.description}
             </Typography>
 
@@ -302,11 +340,24 @@ export function EventDetailPage() {
                       variant="determinate"
                       value={Math.min(100, (event.goingCount / event.capacity) * 100)}
                       color={event.goingCount >= event.capacity ? 'error' : 'primary'}
-                      sx={{ height: 8, borderRadius: 4 }}
+                      sx={{ height: 8, borderRadius: '4px' }}
                     />
                   )}
 
-                  {!isPast && (
+                  {!isPast && !isAuthenticated && (
+                    <>
+                      <Divider />
+                      <Stack spacing={1.5} sx={{ alignItems: 'center', textAlign: 'center', py: 1 }}>
+                        <Typography variant="h6">{t('guest.rsvpTitle')}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {t('guest.rsvpText')}
+                        </Typography>
+                        <AuthButtons size="small" />
+                      </Stack>
+                    </>
+                  )}
+
+                  {!isPast && isAuthenticated && (
                     <>
                       <Divider />
                       <Typography variant="subtitle2">{t('event.areYouGoing')}</Typography>
@@ -337,14 +388,6 @@ export function EventDetailPage() {
                       {event.myRsvpStatus !== null && (
                         <Typography variant="caption" color="text.secondary">
                           {t('event.rsvpHint', { status: t(rsvpStatusKey[event.myRsvpStatus]) })}
-                        </Typography>
-                      )}
-                      {!isAuthenticated && (
-                        <Typography variant="caption" color="text.secondary">
-                          <RouterLink to="/login" state={{ from: location.pathname }}>
-                            {t('nav.signIn')}
-                          </RouterLink>{' '}
-                          {t('event.signInToRsvp')}
                         </Typography>
                       )}
                     </>

@@ -22,9 +22,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useNotify } from '../notify/notify';
 import { useI18n } from '../i18n/i18n';
 import type { MessageKey } from '../i18n/messages';
+import { SUPPORT_EMAIL } from '../lib/config';
 
-/** Contact address shown in the help dialog. Override with VITE_SUPPORT_EMAIL. */
-const SUPPORT_EMAIL = (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) || 'support@gatherly.dev';
 
 const faq: [MessageKey, MessageKey][] = [
   ['help.q1', 'help.a1'],

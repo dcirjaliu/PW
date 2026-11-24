@@ -22,11 +22,13 @@ describe('EventCard', () => {
     renderWithProviders(<EventCard event={event} />);
     expect(screen.getByText('Street Food Festival')).toBeInTheDocument();
     expect(screen.getByText('Piata Victoriei')).toBeInTheDocument();
-    expect(screen.getByText('Food')).toBeInTheDocument();
+    expect(screen.getByText('Food · Ticketmaster')).toBeInTheDocument();
     expect(screen.getByText('Free')).toBeInTheDocument();
     expect(screen.getByText('3 going')).toBeInTheDocument();
-    expect(screen.getByText('Ticketmaster')).toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAttribute('href', '/events/e1');
+    // Poster date block: day number + short month.
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText(/^nov$/i)).toBeInTheDocument();
   });
 
   it('shows local events without a price as free', () => {
@@ -36,7 +38,7 @@ describe('EventCard', () => {
 
   it('translates labels and hides unknown prices of imported events', () => {
     renderWithProviders(<EventCard event={{ ...event, price: null }} />, { lang: 'ro' });
-    expect(screen.getByText('Mâncare')).toBeInTheDocument();
+    expect(screen.getByText('Mâncare · Ticketmaster')).toBeInTheDocument();
     expect(screen.getByText('3 participă')).toBeInTheDocument();
     expect(screen.queryByText('Gratuit')).not.toBeInTheDocument();
   });

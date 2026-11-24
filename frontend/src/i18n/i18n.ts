@@ -19,10 +19,10 @@ export interface I18nValue {
 }
 
 export const I18nContext = createContext<I18nValue>({
-  lang: 'ro',
-  locale: LOCALES.ro,
+  lang: 'en',
+  locale: LOCALES.en,
   setLang: () => {},
-  t: (key, vars) => translate('ro', key, vars),
+  t: (key, vars) => translate('en', key, vars),
 });
 
 export const useI18n = () => useContext(I18nContext);
