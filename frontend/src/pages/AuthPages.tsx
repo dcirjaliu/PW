@@ -1,31 +1,86 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link as RouterLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Alert, Box, Button, Card, CardContent, IconButton, InputAdornment, Link, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, IconButton, InputAdornment, Link, Stack, TextField, Typography } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import CelebrationIcon from '@mui/icons-material/Celebration';
 import { ApiError, errorMessage } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import { useNotify } from '../notify/notify';
 import { useI18n } from '../i18n/i18n';
 import type { MessageKey } from '../i18n/messages';
 import { validateRegister, type RegisterField } from '../lib/registerForm';
+import { bannerPhoto, heroPhoto } from '../lib/images';
+import { display, tokens } from '../theme/theme';
+import { DuotonePhoto } from '../components/DuotonePhoto';
 
-function AuthCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+const panelCopy: Record<'login' | 'register', { lines: [MessageKey, MessageKey]; photo: string }> = {
+  login: { lines: ['auth.panel.login1', 'auth.panel.login2'], photo: heroPhoto },
+  register: { lines: ['auth.panel.register1', 'auth.panel.register2'], photo: bannerPhoto },
+};
+
+/** Split layout: duotone photo panel with a big headline on the left, the form on the right. */
+function AuthLayout({
+  variant,
+  title,
+  subtitle,
+  children,
+}: {
+  variant: 'login' | 'register';
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  const panel = panelCopy[variant];
+
   return (
-    <Box sx={{ display: 'grid', placeItems: 'center', py: { xs: 2, md: 6 } }}>
-      <Card sx={{ width: '100%', maxWidth: 420 }}>
-        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-          <Stack spacing={1} sx={{ alignItems: 'center', mb: 3 }}>
-            <CelebrationIcon color="primary" sx={{ fontSize: 40 }} />
-            <Typography variant="h5">{title}</Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
-              {subtitle}
-            </Typography>
-          </Stack>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '5fr 6fr' },
+        borderRadius: '28px',
+        overflow: 'hidden',
+        border: 1,
+        borderColor: 'divider',
+        bgcolor: tokens.surface,
+        minHeight: { md: 620 },
+        maxWidth: 1080,
+        mx: 'auto',
+      }}
+    >
+      <Box sx={{ position: 'relative', minHeight: { xs: 200, md: 'auto' } }}>
+        <DuotonePhoto
+          src={panel.photo}
+          sx={{ maskImage: { xs: 'linear-gradient(180deg, #000 40%, transparent 100%)', md: 'linear-gradient(90deg, #000 70%, transparent 100%)' } }}
+        />
+        {/* Darken the bottom so the headline stays readable on bright photos. */}
+        <Box
+          aria-hidden
+          sx={{ position: 'absolute', inset: 0, background: `linear-gradient(0deg, ${tokens.surface} 0%, rgba(34,36,52,0.75) 30%, rgba(34,36,52,0) 60%)` }}
+        />
+        <Stack spacing={1.5} sx={{ position: 'absolute', left: { xs: 24, md: 40 }, right: 24, bottom: { xs: 20, md: 40 } }}>
+          <Typography component="p" sx={{ ...display, fontSize: { xs: 26, md: 40 }, lineHeight: 1.05 }}>
+            {t(panel.lines[0])}
+            <br />
+            {t(panel.lines[1])}
+          </Typography>
+          <Typography sx={{ display: { xs: 'none', md: 'block' }, color: 'text.secondary', fontSize: 14, maxWidth: 300 }}>
+            {t('auth.panel.text')}
+          </Typography>
+        </Stack>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', px: { xs: 3, sm: 6, md: 8 }, py: { xs: 4, md: 6 } }}>
+        <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: 24, md: 30 }, mb: 1 }}>
+            {title}
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 4, fontSize: 15 }}>
+            {subtitle}
+          </Typography>
           {children}
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -104,7 +159,7 @@ export function LoginPage() {
   };
 
   return (
-    <AuthCard title={t('auth.signInTitle')} subtitle={t('auth.signInSubtitle')}>
+    <AuthLayout variant="login" title={t('auth.signInTitle')} subtitle={t('auth.signInSubtitle')}>
       <Stack component="form" spacing={2} onSubmit={submit} noValidate>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField
@@ -128,7 +183,7 @@ export function LoginPage() {
           </Link>
         </Typography>
       </Stack>
-    </AuthCard>
+    </AuthLayout>
   );
 }
 
@@ -173,7 +228,7 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthCard title={t('auth.registerTitle')} subtitle={t('auth.registerSubtitle')}>
+    <AuthLayout variant="register" title={t('auth.registerTitle')} subtitle={t('auth.registerSubtitle')}>
       <Stack component="form" spacing={2} onSubmit={submit} noValidate>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField
@@ -223,6 +278,6 @@ export function RegisterPage() {
           </Link>
         </Typography>
       </Stack>
-    </AuthCard>
+    </AuthLayout>
   );
 }

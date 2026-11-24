@@ -206,7 +206,6 @@ export function EventDetailPage() {
           category={event.category}
           height={{ xs: 300, md: 440 }}
           alt={event.title}
-          width={1400}
           eager
         />
         <Box

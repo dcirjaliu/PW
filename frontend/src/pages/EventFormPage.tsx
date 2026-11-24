@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
   Grid,
   InputAdornment,
   MenuItem,
@@ -35,6 +34,7 @@ import { useNotify } from '../notify/notify';
 import { useI18n } from '../i18n/i18n';
 import { LocationPicker } from '../components/EventMap';
 import { EventImage } from '../components/EventCard';
+import { FormSection, PageHeader } from '../components/FormLayout';
 
 export function EventFormPage() {
   const { id } = useParams();
@@ -112,22 +112,17 @@ function EventForm({ event }: { event?: EventDetail }) {
   };
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        {isEdit ? t('form.editTitle') : t('form.createTitle')}
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        {isEdit ? t('form.editText') : t('form.createText')}
-      </Typography>
+    <Box sx={{ maxWidth: 1040, mx: 'auto' }}>
+      <PageHeader
+        overline={t('form.overline')}
+        title={isEdit ? t('form.editTitle') : t('form.createTitle')}
+        subtitle={isEdit ? t('form.editText') : t('form.createText')}
+      />
 
-      <Stack component="form" spacing={3} onSubmit={submit} noValidate>
-        {submitError && <Alert severity="error">{submitError}</Alert>}
+      <Stack component="form" onSubmit={submit} noValidate>
+        {submitError && <Alert severity="error" sx={{ mb: 3 }}>{submitError}</Alert>}
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2.5 }}>
-              {t('form.basics')}
-            </Typography>
+        <FormSection index={1} title={t('form.basics')} description={t('form.basicsHelp')}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 8 }}>
                 <TextField
@@ -175,14 +170,9 @@ function EventForm({ event }: { event?: EventDetail }) {
                 />
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
+        </FormSection>
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2.5 }}>
-              {t('form.when')}
-            </Typography>
+        <FormSection index={2} title={t('form.when')} description={t('form.whenHelp')}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -211,14 +201,9 @@ function EventForm({ event }: { event?: EventDetail }) {
                 />
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
+        </FormSection>
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2.5 }}>
-              {t('form.where')}
-            </Typography>
+        <FormSection index={3} title={t('form.where')} description={t('form.whereHelp')}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
@@ -269,14 +254,9 @@ function EventForm({ event }: { event?: EventDetail }) {
                 />
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
+        </FormSection>
 
-        <Card>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2.5 }}>
-              {t('form.extras')}
-            </Typography>
+        <FormSection index={4} title={t('form.extras')} description={t('form.extrasHelp')}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -326,11 +306,10 @@ function EventForm({ event }: { event?: EventDetail }) {
                 </Card>
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
+        </FormSection>
 
-        <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-          <Button onClick={() => navigate(-1)} disabled={save.isPending}>
+        <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end', borderTop: 1, borderColor: 'divider', pt: 4 }}>
+          <Button variant="outlined" onClick={() => navigate(-1)} disabled={save.isPending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" variant="contained" size="large" startIcon={<SaveIcon />} loading={save.isPending}>

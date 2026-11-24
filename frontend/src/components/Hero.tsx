@@ -3,6 +3,7 @@ import NorthEastIcon from '@mui/icons-material/NorthEast';
 import { useI18n } from '../i18n/i18n';
 import { heroPhoto, heroThumb } from '../lib/images';
 import { display, fullBleed, tokens } from '../theme/theme';
+import { DuotonePhoto } from './DuotonePhoto';
 
 /** App bar height (see Layout) and the main area's top padding the hero slides under. */
 const PULL_UP = { xs: -(60 + 24), md: -(72 + 40) };
@@ -26,14 +27,12 @@ export function Hero({ onExplore }: { onExplore: () => void }) {
         display: 'flex',
       }}
     >
-      {/* Photo layer: grayscale, faded into the page on the left and bottom. */}
-      <Box
-        aria-hidden
+      {/* Photo layer, faded into the page on the left and bottom. */}
+      <DuotonePhoto
+        src={heroPhoto}
+        position="center 30%"
         sx={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          right: 0,
+          left: 'auto',
           width: { xs: '100%', md: '62%' },
           maskImage: {
             xs: 'linear-gradient(180deg, #000 10%, transparent 95%)',
@@ -43,28 +42,7 @@ export function Hero({ onExplore }: { onExplore: () => void }) {
           WebkitMaskComposite: 'source-in',
           opacity: { xs: 0.4, md: 1 },
         }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${heroPhoto})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 30%',
-            filter: 'grayscale(1) contrast(1.2) brightness(0.85)',
-          }}
-        />
-        {/* Purple duotone tint. */}
-        <Box sx={{ position: 'absolute', inset: 0, bgcolor: '#6b4fa8', mixBlendMode: 'color', opacity: 0.55 }} />
-        {/* CRT-style scanlines. */}
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'repeating-linear-gradient(0deg, rgba(10,10,20,0.35) 0px, rgba(10,10,20,0.35) 1px, transparent 1px, transparent 3px)',
-          }}
-        />
-      </Box>
+      />
 
       <Container maxWidth="lg" sx={{ position: 'relative', display: 'flex' }}>
         <Stack

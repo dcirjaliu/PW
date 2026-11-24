@@ -1,61 +1,126 @@
 # Gatherly
 
-Your all-in-one event planner for local events in Timisoara.
+Your all-in-one event planner for local events in Timișoara: discover what's on,
+RSVP, keep favorites and organize your own events.
 
 ## Repository layout
 
 ```
-backend/   .NET API (see below)
-frontend/  React + Vite + TypeScript + Material UI (see below)
+backend/    .NET 10 Web API (EF Core + PostgreSQL, Identity + JWT)
+frontend/   React 19 + Vite + TypeScript single-page app (Material UI)
+README.md
 ```
+
+The two apps run separately: the frontend talks to the API over HTTP.
+
+## Quick start
+
+You need the **.NET 10 SDK**, **PostgreSQL** and **Node.js 22+**.
+
+```bash
+# 1. Backend: http://localhost:5115 (creates the database, migrates and seeds demo data)
+cd backend
+dotnet run --project src/Gatherly.API
+
+# 2. Frontend: http://localhost:3000 (in a second terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Sign in with the seeded demo organizer: `organizer@gatherly.dev` / `Gatherly123`.
+
+---
 
 ## Frontend
 
-Lives in `frontend/`. React 19 + Vite + TypeScript, Material UI, React Router,
-TanStack Query, Leaflet/OpenStreetMap for maps.
+React 19, Vite, TypeScript, Material UI, React Router, TanStack Query,
+Leaflet/OpenStreetMap, Lenis (smooth scrolling). Tests with Vitest + React Testing Library.
 
-```bash
-cd frontend
-npm install
-npm run dev     # http://localhost:3000 (port fixed to match backend CORS)
-npm run build   # typecheck + production build
-npm run lint
-npm test        # Vitest + React Testing Library
+### Structure
+
+```
+frontend/
+  src/
+    api/          HTTP client (auth header, error normalisation), endpoints, DTO types
+    auth/         AuthProvider (JWT in localStorage, auto sign-out), RequireAuth route guard
+    components/   Layout (navbar, footer), Hero, EventCard, EventGrid, EventMap,
+                  GuestGate, FormLayout, HelpDialog, Reveal, SmoothScroll, ...
+    pages/        EventsPage (home), EventDetailPage, EventFormPage, AuthPages,
+                  MePage (My events / Attending / Favorites), ProfilePage, NotFoundPage
+    i18n/         English + Romanian strings, provider and t() helper
+    lib/          Pure helpers: formatting, date ranges, .ics export, client-side
+                  filters/sorting, form validation, images, smooth scroll
+    theme/        MUI theme and design tokens
+    notify/       Snackbar notifications
+    assets/photos Bundled stock photos (see CREDITS.md)
+    test/         Test setup and render helpers
+  *.test.ts(x)    Unit and component tests live next to the code they cover
 ```
 
-The API URL defaults to `http://localhost:5115`; override it with `VITE_API_URL`
-in `frontend/.env.local` (see `.env.example`). `VITE_SUPPORT_EMAIL` sets the
-contact address in the Help dialog.
+### Scripts
 
-Pages: discover (search as you type, categories, Today / This weekend / This week,
-date range, radius filter, sort by date / price / popularity, free only, pagination),
-event details (RSVP, favorites, map, directions, add to Google Calendar / .ics,
-tickets link), create/edit/delete events, My events / Attending / Favorites with
-upcoming/past split, profile, sign in / sign up, help & contact.
+```bash
+npm run dev     # dev server on http://localhost:3000 (fixed port, matches backend CORS)
+npm run build   # typecheck + production build into dist/
+npm run lint    # oxlint
+npm test        # Vitest (unit + component tests)
+```
 
-Design: dark theme with a pink→peach accent, Michroma (headings) + Poppins (body),
-tokens in `src/theme/theme.ts`. Events without an image use a category stock photo
-from Unsplash (`src/lib/images.ts`); the map uses OpenStreetMap tiles inverted for night mode.
+### Configuration
 
-The UI is in English by default, with Romanian one click away (top bar). Strings
-live in `src/i18n/messages.ts`; a test checks both languages have the same keys.
+Copy `frontend/.env.example` to `frontend/.env.local` to override:
 
-Notes on data handled in the browser (the API has no equivalent filters):
-- "Free only" and price/popularity sorting fetch up to 100 matching events and
-  sort/filter them client-side.
-- A local event with no price is treated as free (as in the seed data);
-  for imported (Ticketmaster) events an empty price means "unknown".
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:5115` | Base URL of the backend API |
+| `VITE_SUPPORT_EMAIL` | `support@gatherly.dev` | Contact address in the Help dialog and footer |
+
+### Features
+
+- **Home:** search as you type, categories, Today / This weekend / This week,
+  date range, radius filter (with "use my location"), sort by date / price / popularity,
+  free only, pagination.
+- **Event details:** RSVP (Going / Interested / No, capacity aware), favorites, map,
+  directions, add to Google Calendar or download `.ics`, share, ticket link for
+  Ticketmaster events.
+- **Organizers:** create, edit and delete events, with a map pin for the location.
+- **Account:** My events (upcoming / past), Attending, Favorites, profile, sign in / sign up.
+- **Visitors** (signed out) can browse the first 4 events and read event details;
+  everything else asks them to sign in.
+- **UI:** English by default with a one-click switch to Romanian, help & contact dialog,
+  smooth scrolling with reveal animations, responsive down to phone width.
+
+### Design
+
+Dark theme with a pink→peach accent, Michroma for headings and Poppins for body text;
+tokens live in `src/theme/theme.ts`. Photos get a purple duotone + scanline treatment
+(`DuotonePhoto`). Events without an image use a category photo; all photos are bundled in
+`src/assets/photos` (Unsplash License, see `CREDITS.md`), so the UI works offline.
+The map uses OpenStreetMap tiles inverted for night mode and still needs internet.
+
+### Notes
+
+- Strings live in `src/i18n/messages.ts`; TypeScript and a test make sure both
+  languages have exactly the same keys.
+- The API has no price filter or price/popularity sort, so "Free only" and those sorts
+  fetch up to 100 matching events and filter/sort them in the browser.
+- A local event with no price is treated as free (as in the seed data); for imported
+  Ticketmaster events an empty price means "unknown".
+- The visitor limit is a UX choice in the frontend only; `GET /api/events` is still public.
+
+---
 
 ## Backend
 
-Lives in `backend/`. Run all commands below from that folder.
-
 .NET 10 Web API, EF Core (code-first) + PostgreSQL, ASP.NET Identity + JWT.
+Run all commands below from `backend/`.
 
 ### Structure
 
 ```
 backend/
+  Gatherly.slnx
   src/
     Gatherly.API             Controllers, middleware, Program.cs
     Gatherly.Application     DTOs, validators, interfaces
@@ -63,7 +128,7 @@ backend/
     Gatherly.Infrastructure  ApplicationDbContext, Identity, EF migrations,
                              JWT token service, Ticketmaster sync, seeder
   tests/
-    Gatherly.UnitTests       Validators + Ticketmaster mapping (32 tests)
+    Gatherly.UnitTests       Validators + Ticketmaster mapping
     Gatherly.IntegrationTests
 ```
 
@@ -76,36 +141,54 @@ backend/
 | Events | `GET /api/events` (filters: `category`, `from`, `to`, `search`, `latitude`/`longitude`/`radiusKm`, pagination), `GET /api/events/{id}`, `POST/PUT/DELETE /api/events`, `GET /api/events/mine` |
 | RSVP | `POST/DELETE /api/events/{id}/rsvp` (`Interested`/`Going`/`NotGoing`, capacity enforced), `GET /api/events/attending` |
 | Favorites | `POST/DELETE /api/events/{id}/favorite`, `GET /api/events/favorites` |
-| Integrations | `POST /api/integrations/ticketmaster/sync` — imports Timisoara events from Ticketmaster Discovery API |
+| Integrations | `POST /api/integrations/ticketmaster/sync` — imports Timișoara events from the Ticketmaster Discovery API |
 
 ### Local setup
 
+PostgreSQL must be running on `localhost:5432`. The dev connection string in
+`src/Gatherly.API/appsettings.json` uses user `postgres` / password `postgres` and
+database `gatherly_dev`.
+
+**Windows:** install PostgreSQL with the official installer
+(https://www.postgresql.org/download/windows/). If you chose a different password for
+`postgres`, store your own connection string as a user secret instead of editing the file:
+
 ```bash
-# PostgreSQL (no Docker needed)
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=gatherly_dev;Username=postgres;Password=<your password>" --project src/Gatherly.API
+```
+
+**macOS:**
+
+```bash
 brew install postgresql@17
 brew services start postgresql@17
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 createuser -s postgres
 createdb -U postgres gatherly_dev
+```
 
-# Apply migrations (from backend/)
+Then:
+
+```bash
+# Apply migrations manually (optional: Development does this on startup)
 dotnet ef database update -p src/Gatherly.Infrastructure -s src/Gatherly.API
 
-# Run
+# Run on http://localhost:5115
 dotnet run --project src/Gatherly.API
 ```
 
-In Development, the app auto-migrates and seeds a demo organizer
-(`organizer@gatherly.dev` / `Gatherly123`) plus 12 sample Timisoara events.
+In Development the app auto-migrates and seeds a demo organizer
+(`organizer@gatherly.dev` / `Gatherly123`) plus 12 sample Timișoara events.
 
 ### API docs
 
-- Swagger UI: `http://localhost:5217/swagger` (dev only, Bearer auth supported)
-- Scalar: `http://localhost:5217/scalar/v1`
+- Swagger UI: `http://localhost:5115/swagger` (dev only, Bearer auth supported)
+- Scalar: `http://localhost:5115/scalar/v1`
 
 ### Config
 
-`src/Gatherly.API/appsettings.json` holds the dev connection string and JWT settings.
+`src/Gatherly.API/appsettings.json` holds the dev connection string, JWT settings and
+the allowed CORS origin (`http://localhost:3000`, the frontend dev server).
 Override secrets via user-secrets:
 
 ```bash

@@ -17,27 +17,27 @@ export function EventImage({
   category,
   height,
   alt,
-  width = 800,
   eager,
 }: {
   imageUrl: string | null;
   category: number;
   height: number | string | Record<string, number | string>;
   alt: string;
-  width?: number;
   /** Load immediately (above-the-fold images). */
   eager?: boolean;
 }) {
   return (
     <Box
       component="img"
-      src={imageUrl || categoryPhoto(category, width)}
+      src={imageUrl || categoryPhoto(category)}
       alt={alt}
       loading={eager ? 'eager' : 'lazy'}
       onError={(e) => {
+        // Broken organiser URL: fall back to the bundled category photo (once, to avoid loops).
         const img = e.currentTarget as HTMLImageElement;
-        const fallback = categoryPhoto(category, width);
-        if (img.src !== fallback) img.src = fallback;
+        if (img.dataset.fallback) return;
+        img.dataset.fallback = '1';
+        img.src = categoryPhoto(category);
       }}
       sx={{ display: 'block', width: '100%', height, objectFit: 'cover', bgcolor: tokens.surfaceRaised }}
     />
@@ -97,7 +97,7 @@ export function EventCard({ event, dimmed }: { event: EventSummary; dimmed?: boo
       >
         <Box sx={{ position: 'relative', overflow: 'hidden' }}>
           <Box className="card-img" sx={{ transition: 'transform .4s' }}>
-            <EventImage imageUrl={event.imageUrl} category={event.category} height={190} alt={event.title} width={600} />
+            <EventImage imageUrl={event.imageUrl} category={event.category} height={190} alt={event.title} />
           </Box>
           <Box
             sx={{

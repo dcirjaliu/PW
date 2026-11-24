@@ -1,28 +1,26 @@
-// Stock photography (Unsplash, free to use under the Unsplash License) used where
-// events have no image of their own, plus decorative shots for the landing page.
-
-const unsplash = (id: string, w: number, h?: number) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}${h ? `&h=${h}` : ''}&q=70`;
+// Stock photography bundled with the app (works offline). Sources and license: src/assets/photos/CREDITS.md.
+import music from '../assets/photos/music.jpg';
+import food from '../assets/photos/food.jpg';
+import arts from '../assets/photos/arts.jpg';
+import sports from '../assets/photos/sports.jpg';
+import tech from '../assets/photos/tech.jpg';
+import nightlife from '../assets/photos/nightlife.jpg';
+import community from '../assets/photos/community.jpg';
+import theatre from '../assets/photos/theatre.jpg';
+import film from '../assets/photos/film.jpg';
+import other from '../assets/photos/other.jpg';
+import hero from '../assets/photos/hero.jpg';
+import heroSmall from '../assets/photos/hero-thumb.jpg';
+import banner from '../assets/photos/banner.jpg';
 
 /** One photo per EventCategory (same order as the backend enum). */
-const CATEGORY_PHOTOS = [
-  '1470229722913-7c0e2dbbafd3', // Music – concert crowd
-  '1555939594-58d7cb561ad1', // Food – grill platter
-  '1460661419201-fd4cecdf8a8b', // Arts – paint brushes
-  '1461896836934-ffe607ba8211', // Sports – runner on track
-  '1531058020387-3be344556be6', // Tech – conference hall
-  '1566737236500-c8ac43014a67', // Nightlife – club lights
-  '1517457373958-b7bdd4587205', // Community – people gathered at tables
-  '1503095396549-807759245b35', // Theatre – stage curtain
-  '1489599849927-2ee91cede3ba', // Film – cinema seats
-  '1492684223066-81342ee5ff30', // Other – confetti
-];
+const CATEGORY_PHOTOS = [music, food, arts, sports, tech, nightlife, community, theatre, film, other];
 
-export function categoryPhoto(category: number, width = 800) {
-  const id = CATEGORY_PHOTOS[category] ?? CATEGORY_PHOTOS[CATEGORY_PHOTOS.length - 1];
-  return unsplash(id, width, Math.round((width * 2) / 3));
+/** Fallback image for events that don't have one of their own. */
+export function categoryPhoto(category: number) {
+  return CATEGORY_PHOTOS[category] ?? other;
 }
 
-export const heroPhoto = unsplash('1501281668745-f7f57925c3b4', 1200);
-export const heroThumb = unsplash('1459749411175-04bf5292ceea', 400, 300);
-export const bannerPhoto = unsplash('1533174072545-7a4b6ad7a6c3', 1600, 600);
+export const heroPhoto = hero;
+export const heroThumb = heroSmall;
+export const bannerPhoto = banner;
