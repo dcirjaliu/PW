@@ -2,22 +2,32 @@
 
 Your all-in-one event planner for local events in Timisoara.
 
+## Repository layout
+
+```
+backend/   .NET API (see below)
+frontend/  React + Vite + TypeScript (`npm install && npm run dev`, http://localhost:3000)
+```
+
 ## Backend
+
+Lives in `backend/`. Run all commands below from that folder.
 
 .NET 10 Web API, EF Core (code-first) + PostgreSQL, ASP.NET Identity + JWT.
 
 ### Structure
 
 ```
-src/
-  Gatherly.API             Controllers, middleware, Program.cs
-  Gatherly.Application     DTOs, validators, interfaces
-  Gatherly.Domain          Entities, enums (no dependencies)
-  Gatherly.Infrastructure  ApplicationDbContext, Identity, EF migrations,
-                           JWT token service, Ticketmaster sync, seeder
-tests/
-  Gatherly.UnitTests       Validators + Ticketmaster mapping (32 tests)
-  Gatherly.IntegrationTests
+backend/
+  src/
+    Gatherly.API             Controllers, middleware, Program.cs
+    Gatherly.Application     DTOs, validators, interfaces
+    Gatherly.Domain          Entities, enums (no dependencies)
+    Gatherly.Infrastructure  ApplicationDbContext, Identity, EF migrations,
+                             JWT token service, Ticketmaster sync, seeder
+  tests/
+    Gatherly.UnitTests       Validators + Ticketmaster mapping (32 tests)
+    Gatherly.IntegrationTests
 ```
 
 ### API overview
@@ -41,7 +51,7 @@ export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 createuser -s postgres
 createdb -U postgres gatherly_dev
 
-# Apply migrations
+# Apply migrations (from backend/)
 dotnet ef database update -p src/Gatherly.Infrastructure -s src/Gatherly.API
 
 # Run
