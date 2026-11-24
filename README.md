@@ -6,8 +6,28 @@ Your all-in-one event planner for local events in Timisoara.
 
 ```
 backend/   .NET API (see below)
-frontend/  React + Vite + TypeScript (`npm install && npm run dev`, http://localhost:3000)
+frontend/  React + Vite + TypeScript + Material UI (see below)
 ```
+
+## Frontend
+
+Lives in `frontend/`. React 19 + Vite + TypeScript, Material UI, React Router,
+TanStack Query, Leaflet/OpenStreetMap for maps.
+
+```bash
+cd frontend
+npm install
+npm run dev     # http://localhost:3000 (port fixed to match backend CORS)
+npm run build   # typecheck + production build
+npm run lint
+```
+
+The API URL defaults to `http://localhost:5115`; override it with `VITE_API_URL`
+in `frontend/.env.local` (see `.env.example`).
+
+Pages: discover (search, categories, date range, radius filter, pagination),
+event details (RSVP, favorites, map, directions, tickets link), create/edit/delete
+events, My events / Attending / Favorites, profile, sign in / sign up, light/dark mode.
 
 ## Backend
 
