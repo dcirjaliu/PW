@@ -3,6 +3,7 @@ import { Alert, Box, Button, Card, CardContent, Grid, Skeleton, Typography } fro
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import type { EventSummary } from '../api/types';
 import { errorMessage } from '../api/client';
+import { useI18n } from '../i18n/i18n';
 import { EventCard } from './EventCard';
 
 const gridSize = { xs: 12, sm: 6, md: 4, lg: 3 };
@@ -26,13 +27,18 @@ export function EventGrid({
   error,
   onRetry,
   empty,
+  dimmed,
 }: {
   events: EventSummary[] | undefined;
   isLoading: boolean;
   error?: unknown;
   onRetry?: () => void;
   empty: ReactNode;
+  /** Render cards slightly faded (e.g. past events). */
+  dimmed?: boolean;
 }) {
+  const { t } = useI18n();
+
   if (error) {
     return (
       <Alert
@@ -40,12 +46,12 @@ export function EventGrid({
         action={
           onRetry && (
             <Button color="inherit" size="small" onClick={onRetry}>
-              Retry
+              {t('common.retry')}
             </Button>
           )
         }
       >
-        {errorMessage(error)}
+        {errorMessage(error, t)}
       </Alert>
     );
   }
@@ -75,7 +81,7 @@ export function EventGrid({
     <Grid container spacing={2.5}>
       {events.map((e) => (
         <Grid key={e.id} size={gridSize}>
-          <EventCard event={e} />
+          <EventCard event={e} dimmed={dimmed} />
         </Grid>
       ))}
     </Grid>

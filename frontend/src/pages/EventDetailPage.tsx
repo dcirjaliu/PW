@@ -38,16 +38,20 @@ import { errorMessage } from '../api/client';
 import { RsvpStatus, type EventDetail } from '../api/types';
 import { useAuth } from '../auth/useAuth';
 import { useNotify } from '../notify/notify';
+import { useI18n } from '../i18n/i18n';
+import type { MessageKey } from '../i18n/messages';
 import { categoryMeta } from '../lib/categories';
 import { formatPrice, formatRange, initials } from '../lib/format';
 import { EventImage } from '../components/EventCard';
 import { EventMap } from '../components/EventMap';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AddToCalendar } from '../components/AddToCalendar';
+import { isFree } from '../lib/eventFilters';
 
-const rsvpLabels: Record<RsvpStatus, string> = {
-  [RsvpStatus.Going]: "You're going",
-  [RsvpStatus.Interested]: "You're interested",
-  [RsvpStatus.NotGoing]: "You're not going",
+const rsvpStatusKey: Record<RsvpStatus, MessageKey> = {
+  [RsvpStatus.Going]: 'event.rsvpStatus.going',
+  [RsvpStatus.Interested]: 'event.rsvpStatus.interested',
+  [RsvpStatus.NotGoing]: 'event.rsvpStatus.notGoing',
 };
 
 export function EventDetailPage() {
@@ -56,6 +60,7 @@ export function EventDetailPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const notify = useNotify();
+  const { t, locale } = useI18n();
   const { user, isAuthenticated } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [now] = useState(() => Date.now());
@@ -71,9 +76,7 @@ export function EventDetailPage() {
     queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 
-  const requireLogin = () => {
-    navigate('/login', { state: { from: location.pathname } });
-  };
+  const requireLogin = () => navigate('/login', { state: { from: location.pathname } });
 
   const rsvp = useMutation({
     mutationFn: async (status: RsvpStatus | null) => {
@@ -84,9 +87,9 @@ export function EventDetailPage() {
     onSuccess: (status) => {
       queryClient.invalidateQueries({ queryKey: ['event', id] });
       invalidateLists();
-      notify(status === null ? 'RSVP removed' : rsvpLabels[status]);
+      notify(status === null ? t('event.rsvpRemoved') : t(rsvpStatusKey[status]));
     },
-    onError: (err) => notify(errorMessage(err), 'error'),
+    onError: (err) => notify(errorMessage(err, t), 'error'),
   });
 
   const favorite = useMutation({
@@ -103,11 +106,11 @@ export function EventDetailPage() {
     },
     onError: (err, _fav, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(['event', id], ctx.prev);
-      notify(errorMessage(err), 'error');
+      notify(errorMessage(err, t), 'error');
     },
     onSuccess: (fav) => {
       queryClient.invalidateQueries({ queryKey: ['me', 'favorites'] });
-      notify(fav ? 'Added to favorites' : 'Removed from favorites');
+      notify(fav ? t('event.favorited') : t('event.unfavorited'));
     },
   });
 
@@ -116,12 +119,12 @@ export function EventDetailPage() {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['event', id] });
       invalidateLists();
-      notify('Event deleted');
+      notify(t('event.deleted'));
       navigate('/me/events', { replace: true });
     },
     onError: (err) => {
       setConfirmDelete(false);
-      notify(errorMessage(err), 'error');
+      notify(errorMessage(err, t), 'error');
     },
   });
 
@@ -131,7 +134,7 @@ export function EventDetailPage() {
       if (navigator.share) await navigator.share({ title: event?.title, url });
       else {
         await navigator.clipboard.writeText(url);
-        notify('Link copied to clipboard', 'info');
+        notify(t('event.linkCopied'), 'info');
       }
     } catch {
       // user cancelled the share sheet
@@ -155,17 +158,17 @@ export function EventDetailPage() {
         severity="error"
         action={
           <Button color="inherit" component={RouterLink} to="/">
-            Back to events
+            {t('common.backToEvents')}
           </Button>
         }
       >
-        {error ? errorMessage(error) : 'Event not found.'}
+        {error ? errorMessage(error, t) : t('event.notFound')}
       </Alert>
     );
   }
 
   const meta = categoryMeta(event.category);
-  const price = formatPrice(event.price);
+  const price = formatPrice(event.price, locale, t('common.free'), isFree(event));
   const isOwner = !!user && user.id === event.organizerId;
   const isPast = new Date(event.endUtc).getTime() < now;
   const isFull = event.capacity !== null && event.goingCount >= event.capacity && event.myRsvpStatus !== RsvpStatus.Going;
@@ -183,7 +186,7 @@ export function EventDetailPage() {
     <Stack spacing={3}>
       <Box>
         <Button startIcon={<ArrowBackIcon />} onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}>
-          Back
+          {t('common.back')}
         </Button>
       </Box>
 
@@ -194,28 +197,28 @@ export function EventDetailPage() {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={2}>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-              <Chip icon={meta.icon} label={meta.label} color="primary" variant="outlined" />
-              {event.externalSource && <Chip label={`via ${event.externalSource}`} variant="outlined" />}
-              {isPast && <Chip label="Ended" color="default" />}
-              {isOwner && <Chip label="You're the organizer" color="secondary" variant="outlined" />}
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+              <Chip icon={meta.icon} label={t(meta.labelKey)} color="primary" variant="outlined" />
+              {event.externalSource && <Chip label={t('event.via', { source: event.externalSource })} variant="outlined" />}
+              {isPast && <Chip label={t('event.ended')} />}
+              {isOwner && <Chip label={t('event.youOrganize')} color="secondary" variant="outlined" />}
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}>
               <Typography variant="h4" component="h1" sx={{ flexGrow: 1, fontSize: { xs: 28, md: 36 } }}>
                 {event.title}
               </Typography>
-              <Tooltip title={event.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+              <Tooltip title={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}>
                 <IconButton
                   color="secondary"
                   onClick={() => (isAuthenticated ? favorite.mutate(!event.isFavorite) : requireLogin())}
-                  aria-label="Toggle favorite"
+                  aria-label={event.isFavorite ? t('event.removeFavorite') : t('event.addFavorite')}
                 >
                   {event.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Share">
-                <IconButton onClick={share} aria-label="Share">
+              <Tooltip title={t('event.share')}>
+                <IconButton onClick={share} aria-label={t('event.share')}>
                   <ShareIcon />
                 </IconButton>
               </Tooltip>
@@ -228,7 +231,7 @@ export function EventDetailPage() {
             {hasLocation && (
               <Box>
                 <Typography variant="h6" gutterBottom>
-                  Location
+                  {t('event.location')}
                 </Typography>
                 <EventMap latitude={event.latitude!} longitude={event.longitude!} />
               </Box>
@@ -243,7 +246,7 @@ export function EventDetailPage() {
                 <Stack spacing={2}>
                   <Stack direction="row" spacing={1.5}>
                     <AccessTimeIcon color="action" />
-                    <Typography variant="body2">{formatRange(event.startUtc, event.endUtc)}</Typography>
+                    <Typography variant="body2">{formatRange(event.startUtc, event.endUtc, locale)}</Typography>
                   </Stack>
                   <Stack direction="row" spacing={1.5}>
                     <PlaceIcon color="action" />
@@ -255,7 +258,7 @@ export function EventDetailPage() {
                         {event.address}
                       </Typography>
                       <Button size="small" href={mapsUrl} target="_blank" rel="noopener" sx={{ px: 0 }}>
-                        Get directions
+                        {t('event.directions')}
                       </Button>
                     </Box>
                   </Stack>
@@ -268,26 +271,28 @@ export function EventDetailPage() {
                     </Stack>
                   )}
 
+                  {!isPast && <AddToCalendar event={event} />}
+
                   <Divider />
 
                   <Stack direction="row" spacing={3}>
                     <Box>
                       <Typography variant="h5">{event.goingCount}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        going
+                        {t('event.going')}
                       </Typography>
                     </Box>
                     <Box>
                       <Typography variant="h5">{event.interestedCount}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        interested
+                        {t('event.interested')}
                       </Typography>
                     </Box>
                     {event.capacity !== null && (
                       <Box>
                         <Typography variant="h5">{Math.max(0, event.capacity - event.goingCount)}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          spots left
+                          {t('event.spotsLeft')}
                         </Typography>
                       </Box>
                     )}
@@ -304,7 +309,7 @@ export function EventDetailPage() {
                   {!isPast && (
                     <>
                       <Divider />
-                      <Typography variant="subtitle2">Are you going?</Typography>
+                      <Typography variant="subtitle2">{t('event.areYouGoing')}</Typography>
                       <ToggleButtonGroup
                         exclusive
                         fullWidth
@@ -315,31 +320,31 @@ export function EventDetailPage() {
                         disabled={rsvp.isPending}
                       >
                         <ToggleButton value={RsvpStatus.Going} disabled={isFull}>
-                          <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} /> Going
+                          <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} /> {t('event.rsvp.going')}
                         </ToggleButton>
                         <ToggleButton value={RsvpStatus.Interested}>
-                          <StarIcon fontSize="small" sx={{ mr: 0.5 }} /> Interested
+                          <StarIcon fontSize="small" sx={{ mr: 0.5 }} /> {t('event.rsvp.interested')}
                         </ToggleButton>
                         <ToggleButton value={RsvpStatus.NotGoing}>
-                          <DoNotDisturbIcon fontSize="small" sx={{ mr: 0.5 }} /> No
+                          <DoNotDisturbIcon fontSize="small" sx={{ mr: 0.5 }} /> {t('event.rsvp.no')}
                         </ToggleButton>
                       </ToggleButtonGroup>
                       {isFull && (
                         <Typography variant="caption" color="error">
-                          This event is at full capacity.
+                          {t('event.full')}
                         </Typography>
                       )}
                       {event.myRsvpStatus !== null && (
                         <Typography variant="caption" color="text.secondary">
-                          {rsvpLabels[event.myRsvpStatus]}. Click your answer again to remove it.
+                          {t('event.rsvpHint', { status: t(rsvpStatusKey[event.myRsvpStatus]) })}
                         </Typography>
                       )}
                       {!isAuthenticated && (
                         <Typography variant="caption" color="text.secondary">
                           <RouterLink to="/login" state={{ from: location.pathname }}>
-                            Sign in
+                            {t('nav.signIn')}
                           </RouterLink>{' '}
-                          to RSVP or save this event.
+                          {t('event.signInToRsvp')}
                         </Typography>
                       )}
                     </>
@@ -347,7 +352,7 @@ export function EventDetailPage() {
 
                   {event.externalUrl && (
                     <Button variant="contained" endIcon={<OpenInNewIcon />} href={event.externalUrl} target="_blank" rel="noopener">
-                      Get tickets
+                      {t('event.tickets')}
                     </Button>
                   )}
                 </Stack>
@@ -361,7 +366,7 @@ export function EventDetailPage() {
                     <Avatar sx={{ bgcolor: 'secondary.main' }}>{initials(event.organizerName)}</Avatar>
                     <Box>
                       <Typography variant="caption" color="text.secondary">
-                        Organized by
+                        {t('event.organizedBy')}
                       </Typography>
                       <Typography variant="subtitle2">{event.organizerName}</Typography>
                     </Box>
@@ -373,10 +378,10 @@ export function EventDetailPage() {
             {isOwner && (
               <Stack direction="row" spacing={1}>
                 <Button fullWidth variant="outlined" startIcon={<EditIcon />} component={RouterLink} to={`/events/${event.id}/edit`}>
-                  Edit
+                  {t('event.edit')}
                 </Button>
                 <Button fullWidth variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setConfirmDelete(true)}>
-                  Delete
+                  {t('event.delete')}
                 </Button>
               </Stack>
             )}
@@ -386,9 +391,9 @@ export function EventDetailPage() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this event?"
-        message={`"${event.title}" and all its RSVPs will be permanently deleted. This can't be undone.`}
-        confirmLabel="Delete"
+        title={t('event.deleteTitle')}
+        message={t('event.deleteText', { title: event.title })}
+        confirmLabel={t('event.delete')}
         destructive
         loading={remove.isPending}
         onConfirm={() => remove.mutate()}

@@ -6,6 +6,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import type { EventSummary } from '../api/types';
 import { categoryMeta } from '../lib/categories';
 import { formatPrice, formatShortDate } from '../lib/format';
+import { useI18n } from '../i18n/i18n';
+import { isFree } from '../lib/eventFilters';
 
 export function EventImage({
   imageUrl,
@@ -39,24 +41,46 @@ export function EventImage({
   );
 }
 
-export function EventCard({ event }: { event: EventSummary }) {
+export function EventCard({ event, dimmed }: { event: EventSummary; dimmed?: boolean }) {
+  const { t, locale } = useI18n();
   const meta = categoryMeta(event.category);
-  const price = formatPrice(event.price);
+  const free = isFree(event);
+  const price = formatPrice(event.price, locale, t('common.free'), free);
 
   return (
-    <Card sx={{ height: '100%', transition: 'transform .15s, box-shadow .15s', '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 } }}>
-      <CardActionArea component={RouterLink} to={`/events/${event.id}`} sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+    <Card
+      sx={{
+        height: '100%',
+        opacity: dimmed ? 0.7 : 1,
+        transition: 'transform .15s, box-shadow .15s, opacity .15s',
+        '&:hover': { transform: 'translateY(-2px)', boxShadow: 4, opacity: 1 },
+      }}
+    >
+      <CardActionArea
+        component={RouterLink}
+        to={`/events/${event.id}`}
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+      >
         <Box sx={{ position: 'relative' }}>
           <EventImage imageUrl={event.imageUrl} category={event.category} height={160} alt={event.title} />
-          <Stack direction="row" spacing={1} sx={{ position: 'absolute', top: 10, left: 10 }}>
-            <Chip size="small" icon={meta.icon} label={meta.label} sx={{ bgcolor: 'background.paper', '& .MuiChip-icon': { fontSize: 16 } }} />
-          </Stack>
+          <Chip
+            size="small"
+            icon={meta.icon}
+            label={t(meta.labelKey)}
+            sx={{ position: 'absolute', top: 10, left: 10, bgcolor: 'background.paper', '& .MuiChip-icon': { fontSize: 16 } }}
+          />
           {price && (
             <Chip
               size="small"
               label={price}
-              color={event.price === 0 ? 'success' : 'default'}
-              sx={{ position: 'absolute', top: 10, right: 10, bgcolor: event.price === 0 ? undefined : 'background.paper', fontWeight: 600 }}
+              color={free ? 'success' : 'default'}
+              sx={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                bgcolor: free ? undefined : 'background.paper',
+                fontWeight: 600,
+              }}
             />
           )}
         </Box>
@@ -67,7 +91,7 @@ export function EventCard({ event }: { event: EventSummary }) {
           <Stack spacing={0.5} sx={{ color: 'text.secondary', mt: 'auto' }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <AccessTimeIcon sx={{ fontSize: 16 }} />
-              <Typography variant="body2">{formatShortDate(event.startUtc)}</Typography>
+              <Typography variant="body2">{formatShortDate(event.startUtc, locale)}</Typography>
             </Stack>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <PlaceIcon sx={{ fontSize: 16 }} />
@@ -78,7 +102,7 @@ export function EventCard({ event }: { event: EventSummary }) {
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <PeopleIcon sx={{ fontSize: 16 }} />
-                <Typography variant="body2">{event.goingCount} going</Typography>
+                <Typography variant="body2">{t('card.going', { count: event.goingCount })}</Typography>
               </Stack>
               {event.externalSource && (
                 <Chip size="small" variant="outlined" label={event.externalSource} sx={{ height: 20, fontSize: 11 }} />

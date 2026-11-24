@@ -106,7 +106,12 @@ export async function api<T = void>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-export function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return 'Something went wrong.';
+/**
+ * Human-readable error text. Messages coming from the API are shown as-is;
+ * network failures and unknown errors use the translated fallbacks when `t` is given.
+ */
+export function errorMessage(err: unknown, t?: (key: 'error.network' | 'error.generic') => string): string {
+  if (err instanceof ApiError && err.status === 0 && t) return t('error.network');
+  if (err instanceof Error && err.message) return err.message;
+  return t ? t('error.generic') : 'Something went wrong.';
 }

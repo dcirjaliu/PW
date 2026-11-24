@@ -1,4 +1,5 @@
-import type { ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
+import type { SvgIconComponent } from '@mui/icons-material';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -10,29 +11,50 @@ import TheaterComedyIcon from '@mui/icons-material/TheaterComedy';
 import MovieIcon from '@mui/icons-material/Movie';
 import CategoryIcon from '@mui/icons-material/Category';
 import { CATEGORIES, type EventCategory } from '../api/types';
+import type { MessageKey } from '../i18n/messages';
 
 interface CategoryMeta {
-  label: string;
+  value: number;
+  /** Translation key for the category name. */
+  labelKey: MessageKey;
   icon: ReactElement;
   /** Two-stop gradient used for cards without an image. */
   gradient: [string, string];
 }
 
-const META: CategoryMeta[] = [
-  { label: 'Music', icon: <MusicNoteIcon />, gradient: ['#7c4dff', '#e040fb'] },
-  { label: 'Food', icon: <RestaurantIcon />, gradient: ['#ff6d00', '#ffab40'] },
-  { label: 'Arts', icon: <PaletteIcon />, gradient: ['#d81b60', '#ff8a80'] },
-  { label: 'Sports', icon: <SportsSoccerIcon />, gradient: ['#00897b', '#64ffda'] },
-  { label: 'Tech', icon: <MemoryIcon />, gradient: ['#1e88e5', '#00e5ff'] },
-  { label: 'Nightlife', icon: <NightlifeIcon />, gradient: ['#311b92', '#c51162'] },
-  { label: 'Community', icon: <GroupsIcon />, gradient: ['#43a047', '#c6ff00'] },
-  { label: 'Theatre', icon: <TheaterComedyIcon />, gradient: ['#b71c1c', '#ffb300'] },
-  { label: 'Film', icon: <MovieIcon />, gradient: ['#263238', '#78909c'] },
-  { label: 'Other', icon: <CategoryIcon />, gradient: ['#5c6bc0', '#90a4ae'] },
+const ICONS: SvgIconComponent[] = [
+  MusicNoteIcon,
+  RestaurantIcon,
+  PaletteIcon,
+  SportsSoccerIcon,
+  MemoryIcon,
+  NightlifeIcon,
+  GroupsIcon,
+  TheaterComedyIcon,
+  MovieIcon,
+  CategoryIcon,
 ];
 
-export function categoryMeta(category: EventCategory): CategoryMeta {
-  return META[category] ?? META[CATEGORIES.length - 1];
-}
+const GRADIENTS: [string, string][] = [
+  ['#7c4dff', '#e040fb'],
+  ['#ff6d00', '#ffab40'],
+  ['#d81b60', '#ff8a80'],
+  ['#00897b', '#64ffda'],
+  ['#1e88e5', '#00e5ff'],
+  ['#311b92', '#c51162'],
+  ['#43a047', '#c6ff00'],
+  ['#b71c1c', '#ffb300'],
+  ['#263238', '#78909c'],
+  ['#5c6bc0', '#90a4ae'],
+];
 
-export const CATEGORY_OPTIONS = CATEGORIES.map((_, value) => ({ value, ...META[value] }));
+export const CATEGORY_OPTIONS: CategoryMeta[] = CATEGORIES.map((_, value) => ({
+  value,
+  labelKey: `category.${value}` as MessageKey,
+  icon: createElement(ICONS[value]),
+  gradient: GRADIENTS[value],
+}));
+
+export function categoryMeta(category: EventCategory): CategoryMeta {
+  return CATEGORY_OPTIONS[category] ?? CATEGORY_OPTIONS[CATEGORY_OPTIONS.length - 1];
+}

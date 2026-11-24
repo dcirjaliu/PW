@@ -7,17 +7,19 @@ import { errorMessage } from '../api/client';
 import type { UserProfile } from '../api/types';
 import { useAuth } from '../auth/useAuth';
 import { useNotify } from '../notify/notify';
+import { useI18n } from '../i18n/i18n';
 import { initials } from '../lib/format';
 
 export function ProfilePage() {
+  const { t } = useI18n();
   const { data: profile, isLoading, error } = useQuery({ queryKey: ['me', 'profile'], queryFn: usersApi.me });
 
-  if (error) return <Alert severity="error">{errorMessage(error)}</Alert>;
+  if (error) return <Alert severity="error">{errorMessage(error, t)}</Alert>;
 
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto' }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Profile
+        {t('profile.title')}
       </Typography>
       <Card>
         <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
@@ -39,6 +41,7 @@ export function ProfilePage() {
 
 function ProfileForm({ profile: initial }: { profile: UserProfile }) {
   const { setUser } = useAuth();
+  const { t } = useI18n();
   const notify = useNotify();
   const [profile, setProfile] = useState(initial);
   const [displayName, setDisplayName] = useState(initial.displayName);
@@ -50,9 +53,9 @@ function ProfileForm({ profile: initial }: { profile: UserProfile }) {
     onSuccess: (updated) => {
       setUser(updated);
       setProfile(updated);
-      notify('Profile updated');
+      notify(t('profile.saved'));
     },
-    onError: (err) => notify(errorMessage(err), 'error'),
+    onError: (err) => notify(errorMessage(err, t), 'error'),
   });
 
   const submit = (e: FormEvent) => {
@@ -65,48 +68,50 @@ function ProfileForm({ profile: initial }: { profile: UserProfile }) {
     displayName !== profile.displayName || bio !== (profile.bio ?? '') || avatarUrl !== (profile.avatarUrl ?? '');
 
   return (
-            <Stack component="form" spacing={3} onSubmit={submit}>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Avatar src={avatarUrl || undefined} sx={{ width: 96, height: 96, fontSize: 36, bgcolor: 'primary.main' }}>
-                  {initials(displayName || profile.displayName)}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">{displayName || profile.displayName}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {profile.email}
-                  </Typography>
-                </Box>
-              </Stack>
-              <TextField
-                label="Display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                error={!displayName.trim()}
-                helperText={!displayName.trim() ? 'Display name is required.' : undefined}
-                slotProps={{ htmlInput: { maxLength: 100 } }}
-              />
-              <TextField label="Email" value={profile.email} disabled helperText="Email can't be changed." />
-              <TextField
-                label="Bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                multiline
-                minRows={3}
-                placeholder="A few words about you and the events you like."
-              />
-              <TextField
-                label="Avatar URL"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://…"
-                type="url"
-              />
-              <Box>
-                <Button type="submit" variant="contained" startIcon={<SaveIcon />} loading={save.isPending} disabled={!dirty}>
-                  Save changes
-                </Button>
-              </Box>
-            </Stack>
+    <Stack component="form" spacing={3} onSubmit={submit}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <Avatar src={avatarUrl || undefined} sx={{ width: 96, height: 96, fontSize: 36, bgcolor: 'primary.main' }}>
+          {initials(displayName || profile.displayName)}
+        </Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h6" noWrap>
+            {displayName || profile.displayName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {profile.email}
+          </Typography>
+        </Box>
+      </Stack>
+      <TextField
+        label={t('auth.displayName')}
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+        required
+        error={!displayName.trim()}
+        helperText={!displayName.trim() ? t('profile.nameRequired') : undefined}
+        slotProps={{ htmlInput: { maxLength: 100 } }}
+      />
+      <TextField label={t('auth.email')} value={profile.email} disabled helperText={t('profile.emailLocked')} />
+      <TextField
+        label={t('profile.bio')}
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        multiline
+        minRows={3}
+        placeholder={t('profile.bioPlaceholder')}
+      />
+      <TextField
+        label={t('profile.avatarUrl')}
+        value={avatarUrl}
+        onChange={(e) => setAvatarUrl(e.target.value)}
+        placeholder="https://…"
+        type="url"
+      />
+      <Box>
+        <Button type="submit" variant="contained" startIcon={<SaveIcon />} loading={save.isPending} disabled={!dirty}>
+          {t('profile.save')}
+        </Button>
+      </Box>
+    </Stack>
   );
 }

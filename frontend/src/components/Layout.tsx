@@ -35,21 +35,22 @@ import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import CelebrationIcon from '@mui/icons-material/Celebration';
 import { useAuth } from '../auth/useAuth';
 import { useColorMode } from '../theme/colorMode';
+import { useI18n } from '../i18n/i18n';
+import type { MessageKey } from '../i18n/messages';
 import { initials } from '../lib/format';
 import { HelpButton } from './HelpDialog';
 
-const accountLinks = [
-  { to: '/me/events', label: 'My events', icon: <EventIcon fontSize="small" /> },
-  { to: '/me/attending', label: 'Attending', icon: <EventAvailableIcon fontSize="small" /> },
-  { to: '/me/favorites', label: 'Favorites', icon: <FavoriteIcon fontSize="small" /> },
-  { to: '/profile', label: 'Profile', icon: <PersonIcon fontSize="small" /> },
+const accountLinks: { to: string; labelKey: MessageKey; icon: React.ReactElement; inTopBar?: boolean }[] = [
+  { to: '/me/events', labelKey: 'nav.myEvents', icon: <EventIcon fontSize="small" /> },
+  { to: '/me/attending', labelKey: 'nav.attending', icon: <EventAvailableIcon fontSize="small" />, inTopBar: true },
+  { to: '/me/favorites', labelKey: 'nav.favorites', icon: <FavoriteIcon fontSize="small" />, inTopBar: true },
+  { to: '/profile', labelKey: 'nav.profile', icon: <PersonIcon fontSize="small" /> },
 ];
-
-const topBarPaths = ['/me/attending', '/me/favorites'];
 
 export function Layout() {
   const { user, isAuthenticated, logout } = useAuth();
   const { mode, toggle } = useColorMode();
+  const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -72,16 +73,16 @@ export function Layout() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky" sx={{ borderBottom: 1, borderColor: 'divider', backdropFilter: 'blur(8px)' }}>
         <Container maxWidth="lg">
-          <Toolbar disableGutters sx={{ gap: 1 }}>
+          <Toolbar disableGutters sx={{ gap: { xs: 0.5, sm: 1 } }}>
             {isMobile && (
-              <IconButton edge="start" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+              <IconButton edge="start" onClick={() => setDrawerOpen(true)} aria-label={t('nav.openMenu')}>
                 <MenuIcon />
               </IconButton>
             )}
             <Box
               component={RouterLink}
               to="/"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'inherit', textDecoration: 'none', mr: 2 }}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'inherit', textDecoration: 'none', mr: { xs: 0, md: 2 } }}
             >
               <CelebrationIcon color="primary" />
               <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: -0.5 }}>
@@ -92,15 +93,15 @@ export function Layout() {
             {!isMobile && (
               <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Button component={NavLink} to="/" end startIcon={<ExploreIcon />} sx={navButtonSx}>
-                  Discover
+                  {t('nav.discover')}
                 </Button>
                 {isAuthenticated && (
                   <>
                     <Button component={NavLink} to="/me/attending" startIcon={<EventAvailableIcon />} sx={navButtonSx}>
-                      Attending
+                      {t('nav.attending')}
                     </Button>
                     <Button component={NavLink} to="/me/favorites" startIcon={<FavoriteIcon />} sx={navButtonSx}>
-                      Favorites
+                      {t('nav.favorites')}
                     </Button>
                   </>
                 )}
@@ -109,9 +110,18 @@ export function Layout() {
 
             <Box sx={{ flexGrow: 1 }} />
 
+            <Tooltip title={t('nav.language')}>
+              <Button
+                onClick={() => setLang(lang === 'ro' ? 'en' : 'ro')}
+                aria-label={t('nav.language')}
+                sx={{ minWidth: 0, px: 1, color: 'text.secondary', fontWeight: 700 }}
+              >
+                {lang === 'ro' ? 'EN' : 'RO'}
+              </Button>
+            </Tooltip>
             <HelpButton />
-            <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
-              <IconButton onClick={toggle} aria-label="Toggle color mode">
+            <Tooltip title={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
+              <IconButton onClick={toggle} aria-label={mode === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}>
                 {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
             </Tooltip>
@@ -120,10 +130,10 @@ export function Layout() {
               <>
                 {!isMobile && (
                   <Button variant="contained" startIcon={<AddIcon />} component={RouterLink} to="/events/new">
-                    Create event
+                    {t('nav.createEvent')}
                   </Button>
                 )}
-                <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} aria-label="Account menu">
+                <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} aria-label={t('nav.accountMenu')}>
                   <Avatar src={user.avatarUrl ?? undefined} sx={{ width: 34, height: 34, bgcolor: 'primary.main' }}>
                     {initials(user.displayName)}
                   </Avatar>
@@ -143,34 +153,31 @@ export function Layout() {
                   </Box>
                   <Divider />
                   {/* Attending/Favorites live in the top bar (desktop) and the drawer (mobile). */}
-                  {accountLinks.filter((l) => !topBarPaths.includes(l.to)).map((l) => (
-                    <MenuItem
-                      key={l.to}
-                      component={RouterLink}
-                      to={l.to}
-                      onClick={() => setMenuAnchor(null)}
-                    >
-                      <ListItemIcon>{l.icon}</ListItemIcon>
-                      {l.label}
-                    </MenuItem>
-                  ))}
+                  {accountLinks
+                    .filter((l) => !l.inTopBar)
+                    .map((l) => (
+                      <MenuItem key={l.to} component={RouterLink} to={l.to} onClick={() => setMenuAnchor(null)}>
+                        <ListItemIcon>{l.icon}</ListItemIcon>
+                        {t(l.labelKey)}
+                      </MenuItem>
+                    ))}
                   <Divider />
                   <MenuItem onClick={handleLogout}>
                     <ListItemIcon>
                       <LogoutIcon fontSize="small" />
                     </ListItemIcon>
-                    Sign out
+                    {t('nav.signOut')}
                   </MenuItem>
                 </Menu>
               </>
             ) : (
               <>
-                <Button component={RouterLink} to="/login" startIcon={<LoginIcon />}>
-                  Sign in
+                <Button component={RouterLink} to="/login" startIcon={isMobile ? undefined : <LoginIcon />}>
+                  {t('nav.signIn')}
                 </Button>
                 {!isMobile && (
                   <Button variant="contained" component={RouterLink} to="/register">
-                    Sign up
+                    {t('nav.signUp')}
                   </Button>
                 )}
               </>
@@ -180,7 +187,7 @@ export function Layout() {
       </AppBar>
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <Box sx={{ width: 260 }} role="navigation" onClick={() => setDrawerOpen(false)}>
+        <Box sx={{ width: 270 }} role="navigation" onClick={() => setDrawerOpen(false)}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
             <CelebrationIcon color="primary" />
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
@@ -193,7 +200,7 @@ export function Layout() {
               <ListItemIcon>
                 <ExploreIcon />
               </ListItemIcon>
-              <ListItemText primary="Discover" />
+              <ListItemText primary={t('nav.discover')} />
             </ListItemButton>
             {isAuthenticated ? (
               <>
@@ -201,12 +208,12 @@ export function Layout() {
                   <ListItemIcon>
                     <AddIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Create event" />
+                  <ListItemText primary={t('nav.createEvent')} />
                 </ListItemButton>
                 {accountLinks.map((l) => (
                   <ListItemButton key={l.to} component={NavLink} to={l.to}>
                     <ListItemIcon>{l.icon}</ListItemIcon>
-                    <ListItemText primary={l.label} />
+                    <ListItemText primary={t(l.labelKey)} />
                   </ListItemButton>
                 ))}
                 <Divider sx={{ my: 1 }} />
@@ -214,7 +221,7 @@ export function Layout() {
                   <ListItemIcon>
                     <LogoutIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Sign out" />
+                  <ListItemText primary={t('nav.signOut')} />
                 </ListItemButton>
               </>
             ) : (
@@ -223,13 +230,13 @@ export function Layout() {
                   <ListItemIcon>
                     <LoginIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Sign in" />
+                  <ListItemText primary={t('nav.signIn')} />
                 </ListItemButton>
                 <ListItemButton component={NavLink} to="/register">
                   <ListItemIcon>
                     <PersonIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Sign up" />
+                  <ListItemText primary={t('nav.signUp')} />
                 </ListItemButton>
               </>
             )}
@@ -246,7 +253,7 @@ export function Layout() {
       <Box component="footer" sx={{ py: 3, borderTop: 1, borderColor: 'divider' }}>
         <Container maxWidth="lg">
           <Typography variant="body2" color="text.secondary" align="center">
-            Gatherly · Local events in Timișoara
+            Gatherly · {t('app.tagline')}
           </Typography>
         </Container>
       </Box>

@@ -20,14 +20,27 @@ npm install
 npm run dev     # http://localhost:3000 (port fixed to match backend CORS)
 npm run build   # typecheck + production build
 npm run lint
+npm test        # Vitest + React Testing Library
 ```
 
 The API URL defaults to `http://localhost:5115`; override it with `VITE_API_URL`
-in `frontend/.env.local` (see `.env.example`).
+in `frontend/.env.local` (see `.env.example`). `VITE_SUPPORT_EMAIL` sets the
+contact address in the Help dialog.
 
-Pages: discover (search, categories, date range, radius filter, pagination),
-event details (RSVP, favorites, map, directions, tickets link), create/edit/delete
-events, My events / Attending / Favorites, profile, sign in / sign up, light/dark mode.
+Pages: discover (search as you type, categories, Today / This weekend / This week,
+date range, radius filter, sort by date / price / popularity, free only, pagination),
+event details (RSVP, favorites, map, directions, add to Google Calendar / .ics,
+tickets link), create/edit/delete events, My events / Attending / Favorites with
+upcoming/past split, profile, sign in / sign up, help & contact, light/dark mode.
+
+The UI is in Romanian by default, with English one click away (top bar). Strings
+live in `src/i18n/messages.ts`; a test checks both languages have the same keys.
+
+Notes on data handled in the browser (the API has no equivalent filters):
+- "Free only" and price/popularity sorting fetch up to 100 matching events and
+  sort/filter them client-side.
+- A local event with no price is treated as free (as in the seed data);
+  for imported (Ticketmaster) events an empty price means "unknown".
 
 ## Backend
 

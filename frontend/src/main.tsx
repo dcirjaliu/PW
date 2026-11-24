@@ -12,6 +12,7 @@ import { ApiError } from './api/client';
 import { AuthProvider } from './auth/AuthProvider';
 import { ColorModeProvider } from './theme/ColorModeProvider';
 import { NotifyProvider } from './notify/NotifyProvider';
+import { I18nProvider } from './i18n/I18nProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <I18nProvider>
         <ColorModeProvider>
           <NotifyProvider>
             <AuthProvider>
@@ -35,6 +37,7 @@ createRoot(document.getElementById('root')!).render(
             </AuthProvider>
           </NotifyProvider>
         </ColorModeProvider>
+        </I18nProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

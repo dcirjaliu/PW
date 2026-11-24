@@ -7,6 +7,9 @@ import CelebrationIcon from '@mui/icons-material/Celebration';
 import { ApiError, errorMessage } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import { useNotify } from '../notify/notify';
+import { useI18n } from '../i18n/i18n';
+import type { MessageKey } from '../i18n/messages';
+import { validateRegister, type RegisterField } from '../lib/registerForm';
 
 function AuthCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
@@ -35,6 +38,7 @@ function PasswordField(props: {
   helperText?: string;
   autoComplete: string;
 }) {
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
   return (
     <TextField
@@ -51,7 +55,11 @@ function PasswordField(props: {
         input: {
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton onClick={() => setShow((s) => !s)} edge="end" aria-label={show ? 'Hide password' : 'Show password'}>
+              <IconButton
+                onClick={() => setShow((s) => !s)}
+                edge="end"
+                aria-label={show ? t('auth.hidePassword') : t('auth.showPassword')}
+              >
                 {show ? <VisibilityOff /> : <Visibility />}
               </IconButton>
             </InputAdornment>
@@ -69,6 +77,7 @@ function useRedirectTarget() {
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const notify = useNotify();
   const target = useRedirectTarget();
@@ -85,21 +94,21 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login({ email: email.trim(), password });
-      notify('Welcome back!');
+      notify(t('auth.welcomeBack'));
       navigate(target, { replace: true });
     } catch (err) {
-      setError(errorMessage(err));
+      setError(errorMessage(err, t));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthCard title="Sign in" subtitle="RSVP to events, save favorites and organize your own.">
+    <AuthCard title={t('auth.signInTitle')} subtitle={t('auth.signInSubtitle')}>
       <Stack component="form" spacing={2} onSubmit={submit} noValidate>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField
-          label="Email"
+          label={t('auth.email')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -108,14 +117,14 @@ export function LoginPage() {
           fullWidth
           autoFocus
         />
-        <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
+        <PasswordField label={t('auth.password')} value={password} onChange={setPassword} autoComplete="current-password" />
         <Button type="submit" variant="contained" size="large" loading={loading} disabled={!email || !password}>
-          Sign in
+          {t('auth.signInButton')}
         </Button>
         <Typography variant="body2" align="center">
-          New to Gatherly?{' '}
+          {t('auth.newHere')}{' '}
           <Link component={RouterLink} to="/register" state={{ from: target }}>
-            Create an account
+            {t('auth.createAccountLink')}
           </Link>
         </Typography>
       </Stack>
@@ -125,97 +134,92 @@ export function LoginPage() {
 
 export function RegisterPage() {
   const { register, isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const notify = useNotify();
   const target = useRedirectTarget();
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [values, setValues] = useState<Record<RegisterField, string>>({ displayName: '', email: '', password: '', confirm: '' });
+  const [clientErrors, setClientErrors] = useState<Partial<Record<RegisterField, MessageKey>>>({});
+  const [serverErrors, setServerErrors] = useState<Partial<Record<RegisterField, string>>>({});
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   if (isAuthenticated && !loading) return <Navigate to={target} replace />;
 
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!displayName.trim()) errs.displayName = 'Tell us your name.';
-    else if (displayName.length > 100) errs.displayName = 'Max 100 characters.';
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) errs.email = 'Enter a valid email.';
-    if (password.length < 8) errs.password = 'At least 8 characters.';
-    if (confirm !== password) errs.confirm = "Passwords don't match.";
-    setFieldErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
+  const set = (field: RegisterField) => (value: string) => setValues((v) => ({ ...v, [field]: value }));
+  const fieldError = (field: RegisterField) =>
+    clientErrors[field] ? t(clientErrors[field]!) : serverErrors[field];
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!validate()) return;
+    setServerErrors({});
+    const errs = validateRegister(values);
+    setClientErrors(errs);
+    if (Object.keys(errs).length) return;
     setLoading(true);
     try {
-      await register({ displayName: displayName.trim(), email: email.trim(), password });
-      notify('Account created. Welcome to Gatherly!');
+      await register({ displayName: values.displayName.trim(), email: values.email.trim(), password: values.password });
+      notify(t('auth.registered'));
       navigate(target, { replace: true });
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fieldErrors).length) {
-        setFieldErrors(Object.fromEntries(Object.entries(err.fieldErrors).map(([k, v]) => [k, v.join(' ')])));
+        setServerErrors(Object.fromEntries(Object.entries(err.fieldErrors).map(([k, v]) => [k, v.join(' ')])));
       }
-      setError(errorMessage(err));
+      setError(errorMessage(err, t));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthCard title="Create your account" subtitle="Join Gatherly to discover and organize local events.">
+    <AuthCard title={t('auth.registerTitle')} subtitle={t('auth.registerSubtitle')}>
       <Stack component="form" spacing={2} onSubmit={submit} noValidate>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField
-          label="Display name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          error={!!fieldErrors.displayName}
-          helperText={fieldErrors.displayName}
+          label={t('auth.displayName')}
+          value={values.displayName}
+          onChange={(e) => set('displayName')(e.target.value)}
+          error={!!fieldError('displayName')}
+          helperText={fieldError('displayName')}
           autoComplete="name"
           required
           fullWidth
           autoFocus
         />
         <TextField
-          label="Email"
+          label={t('auth.email')}
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={!!fieldErrors.email}
-          helperText={fieldErrors.email}
+          value={values.email}
+          onChange={(e) => set('email')(e.target.value)}
+          error={!!fieldError('email')}
+          helperText={fieldError('email')}
           autoComplete="email"
           required
           fullWidth
         />
         <PasswordField
-          label="Password"
-          value={password}
-          onChange={setPassword}
-          error={fieldErrors.password}
-          helperText="At least 8 characters, with a digit, an uppercase and a lowercase letter."
+          label={t('auth.password')}
+          value={values.password}
+          onChange={set('password')}
+          error={fieldError('password')}
+          helperText={t('auth.passwordHelp')}
           autoComplete="new-password"
         />
         <PasswordField
-          label="Confirm password"
-          value={confirm}
-          onChange={setConfirm}
-          error={fieldErrors.confirm}
+          label={t('auth.confirmPassword')}
+          value={values.confirm}
+          onChange={set('confirm')}
+          error={fieldError('confirm')}
           autoComplete="new-password"
         />
         <Button type="submit" variant="contained" size="large" loading={loading}>
-          Create account
+          {t('auth.registerButton')}
         </Button>
         <Typography variant="body2" align="center">
-          Already have an account?{' '}
+          {t('auth.haveAccount')}{' '}
           <Link component={RouterLink} to="/login" state={{ from: target }}>
-            Sign in
+            {t('auth.signInLink')}
           </Link>
         </Typography>
       </Stack>
